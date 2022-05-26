@@ -3,11 +3,9 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 const jwt = require('jsonwebtoken');
-const { ObjectID } = require('bson');
-const res = require('express/lib/response');
 const port = process.env.PORT || 5000;
 require('dotenv').config();
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const stripe = require('stripe')('sk_test_51L3b7WIe5Ii0QIqS2ZKkvLob4hjk71BlnS8LO0hUnNN06dNG9XDMt89tm0AJt79jICseM0hHC8cdYcmteZssO5uA00M7YFRRBZ');
 app.use(cors());
 app.use(express.json());
 
@@ -20,19 +18,40 @@ const run = async () => {
         const reviewCollection = client.db('msDB').collection('reviews');
         const orderCollection = client.db('msDB').collection('orders');
         const profileCollection = client.db('msDB').collection('users');
+        const paymentCollection = client.db('msDB').collection('payments');
 
+        app.post('/create-payment-intent', async(req, res) =>{
+            const service = req.body;
+            const price = service.totalPrice;
+            const amount = price*100;
+            const paymentIntent = await stripe.paymentIntents.create({
+              amount : amount,
+              currency: 'usd',
+              payment_method_types:['card']
+            });
+            res.send({clientSecret: paymentIntent.client_secret})
+          });
+      
         app.get('/item', async (req, res) => {
             const query = {};
             const cursor = itemCollection.find(query);
             const items = await cursor.toArray();
             res.send(items);
         })
+
         app.get('/review', async (req, res) => {
             const query = {};
             const cursor = reviewCollection.find(query);
             const items = await cursor.toArray();
             res.send(items);
         })
+        app.post('/review', async (req, res) => {
+            const newItem = req.body;
+            const result = await reviewCollection.insertOne(newItem);
+            res.send(result);
+        });
+
+
         app.get('/item/:id', async (req, res) => {
             const id = req.params;
             const query = { _id: ObjectId(id) }
@@ -43,7 +62,6 @@ const run = async () => {
             const query = {};
             const result = await orderCollection.find(query).toArray();
             res.send(result);
-
         })
         app.put('/item/:id', async (req, res) => {
             const id = req.params;
@@ -81,6 +99,23 @@ const run = async () => {
             res.send(order)
         })
 
+        //payment 3 
+        app.patch('/ordered/:id', async(req, res) =>{
+            const id  = req.params.id;
+            const payment = req.body;
+            const filter = {_id: ObjectId(id)};
+            const updatedDoc = {
+              $set: {
+                paid: true,
+                transactionId: payment.transactionId
+              }
+            }
+
+            const result = await paymentCollection.insertOne(payment);
+            const updatedBooking = await orderCollection.updateOne(filter, updatedDoc);
+            res.send(updatedBooking,result);
+          })
+
         app.get('/users', async (req, res) => {
             const users = await profileCollection.find().toArray()
             res.send(users)
@@ -105,9 +140,8 @@ const run = async () => {
             const reviews = await cursor.toArray();
             res.send(reviews);
         });
-        app.post('/create-payment-intent')
     }
-    finally { }
+    finally {}
 }
 run().catch(console.dir);
 
