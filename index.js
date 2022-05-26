@@ -4,9 +4,10 @@ const cors = require('cors');
 const app = express();
 const jwt = require('jsonwebtoken');
 const { ObjectID } = require('bson');
+const res = require('express/lib/response');
 const port = process.env.PORT || 5000;
 require('dotenv').config();
-
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 app.use(cors());
 app.use(express.json());
 
@@ -73,7 +74,12 @@ const run = async () => {
             const result = await orderCollection.insertOne(ordered)
             res.send(result);
         })
-
+        app.get('/ordered/:id',async(req,res)=>{
+            const id =req.params.id;
+            const query = {_id:ObjectId(id)};
+            const order = await orderCollection.findOne(query);
+            res.send(order)
+        })
 
         app.get('/users', async (req, res) => {
             const users = await profileCollection.find().toArray()
@@ -99,6 +105,7 @@ const run = async () => {
             const reviews = await cursor.toArray();
             res.send(reviews);
         });
+        app.post('/create-payment-intent')
     }
     finally { }
 }
