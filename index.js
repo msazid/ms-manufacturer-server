@@ -79,6 +79,12 @@ const run = async () => {
             const result = await itemCollection.findOne(query);
             res.send(result);
         })
+        app.delete('/item/:id',async(req,res)=>{
+            const id = req.params.id;
+            const query ={_id:ObjectId(id)};
+            const result = await itemCollection.deleteOne(query);
+            res.send(result);
+            })
         app.put('/item/:id', async (req, res) => {
             const id = req.params;
             const updateProduct = req.body;
@@ -91,6 +97,7 @@ const run = async () => {
             const result = await itemCollection.updateOne(filter, updateDoc);
             res.send(result);
         })
+        
         app.get('/ordering', verifyJWT, async (req, res) => {
             const email = req.query.email;
             const decodedEmail = req.decoded.email;
