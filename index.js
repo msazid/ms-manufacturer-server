@@ -55,7 +55,11 @@ const run = async () => {
             const items = await cursor.toArray();
             res.send(items);
         })
-
+        app.post('/item',async(req,res)=>{
+            const newItem = req.body;
+            const result = await itemCollection.insertOne(newItem);
+            res.send(result);
+        })
         app.get('/review', async (req, res) => {
             const query = {};
             const cursor = reviewCollection.find(query);
