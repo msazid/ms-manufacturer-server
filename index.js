@@ -97,7 +97,7 @@ const run = async () => {
             const result = await itemCollection.updateOne(filter, updateDoc);
             res.send(result);
         })
-        
+
         app.get('/ordering', verifyJWT, async (req, res) => {
             const email = req.query.email;
             const decodedEmail = req.decoded.email;
@@ -139,7 +139,6 @@ const run = async () => {
                     transactionId: payment.transactionId
                 }
             }
-
             const result = await paymentCollection.insertOne(payment);
             const updatedBooking = await orderCollection.updateOne(filter, updatedDoc);
             res.send(updatedBooking, result);
